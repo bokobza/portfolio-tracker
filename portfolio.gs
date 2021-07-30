@@ -44,6 +44,8 @@ function setup() {
     historySheet = activeSpreadsheet.insertSheet();
     historySheet.setName("history");
   }
+
+  sheet.activate();
 }
 
 const tickersColumn = "A";
