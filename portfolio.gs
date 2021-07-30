@@ -1,54 +1,9 @@
-function onOpen() {
+function setup() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('Portfolio Menu')
       .addItem('Refresh','refreshPortfolio')
       .addToUi();
-}
-
-const tickersColumn = "A";
-const tickersRowStart = 2;
-const quantityColumn = "B";
-const quantityRowStart = "B";
-var tickers = [];
-var tickersCount;
-var cmcApiKey;
-var currencies = [];
-var currenciesCount;
-var sheet;
-var settingsSheet;
-
-function refreshPortfolio() {
-
-  getAllVariables();
-  cleanSheet();
-
-  if (currenciesCount == 0 || tickersCount == 0) {
-    Logger.log("No tickers or no currencies specified.");
-    return;
-  } else if (cmcApiKey == "") {
-    throw new Error( "Please add the CoinMarketCap API key in the sheet 'settings', cell B2." );
-  }
-
-  // Call CMC and populate the data.  
-  for (var counter = 0; counter < currenciesCount; counter = counter +1) {
-    // Fetch prices and populate the table.
-    // + 4 accounts for the columns ticker, quantity and an empty column.
-    getPrices(currencies[counter], counter + 4);
-
-    // Add grand totals title.
-    sheet.getRange(tickersCount + 3, currenciesCount + 4).setValue("Grand Totals:"); 
-
-    // Compute the totals per currency.
-    computeTotalsPerCurrency(currencies[counter], counter + 4);
-  }
-
-  computePortfolioAllocation();
-  applyFormatting();
-  createChart();
-  saveToHistory();
-}
-
-function getAllVariables() {
+  
   var activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   sheet = activeSpreadsheet.getSheetByName("portfolio");
 
@@ -89,6 +44,56 @@ function getAllVariables() {
     historySheet = activeSpreadsheet.insertSheet();
     historySheet.setName("history");
   }
+}
+
+const tickersColumn = "A";
+const tickersRowStart = 2;
+const quantityColumn = "B";
+const quantityRowStart = "B";
+var tickers = [];
+var tickersCount;
+var cmcApiKey;
+var currencies = [];
+var currenciesCount;
+var sheet;
+var settingsSheet;
+
+function refreshPortfolio() {
+
+  getAllVariables();
+  cleanSheet();
+
+  if (currenciesCount == 0 || tickersCount == 0) {
+    Logger.log("No tickers or no currencies specified.");
+    throw new Error( "No tickers or no currencies specified." );
+  } else if (cmcApiKey == "") {
+    throw new Error( "Please add the CoinMarketCap API key in the sheet 'settings', cell B2." );
+  }
+
+  // Call CMC and populate the data.  
+  for (var counter = 0; counter < currenciesCount; counter = counter +1) {
+    // Fetch prices and populate the table.
+    // + 4 accounts for the columns ticker, quantity and an empty column.
+    getPrices(currencies[counter], counter + 4);
+
+    // Add grand totals title.
+    sheet.getRange(tickersCount + 3, currenciesCount + 4).setValue("Grand Totals:"); 
+
+    // Compute the totals per currency.
+    computeTotalsPerCurrency(currencies[counter], counter + 4);
+  }
+
+  computePortfolioAllocation();
+  applyFormatting();
+  createChart();
+  saveToHistory();
+}
+
+function getAllVariables() {
+  var activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  sheet = activeSpreadsheet.getSheetByName("portfolio");
+  settingsSheet = activeSpreadsheet.getSheetByName("settings");
+  historySheet = activeSpreadsheet.getSheetByName("history");
 
   // Get the tickers.
   var range = sheet.getRange(tickersColumn + tickersRowStart + ":" + tickersColumn);
