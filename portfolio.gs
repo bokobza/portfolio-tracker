@@ -1,11 +1,7 @@
-function doGet() {
-  return HtmlService.createHtmlOutputFromFile('Index');
-}
-
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('Portfolio Menu')
-      .addItem('Refresh','callCoinMarketCap')
+      .addItem('Refresh','refreshPortfolio')
       .addToUi();
 }
 
@@ -21,12 +17,19 @@ var currenciesCount;
 var sheet;
 var settingsSheet;
 
-function callCoinMarketCap() {
+function refreshPortfolio() {
 
   getAllVariables();
   cleanSheet();
 
-  // Call CMC and populate the data.
+  if (currenciesCount == 0 || tickersCount == 0) {
+    Logger.log("No tickers or no currencies specified.");
+    return;
+  } else if (cmcApiKey == "") {
+    throw new Error( "Please add the CoinMarketCap API key in the sheet 'settings', cell B2." );
+  }
+
+  // Call CMC and populate the data.  
   for (var counter = 0; counter < currenciesCount; counter = counter +1) {
     // Fetch prices and populate the table.
     // + 4 accounts for the columns ticker, quantity and an empty column.
@@ -46,13 +49,45 @@ function callCoinMarketCap() {
 }
 
 function getAllVariables() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  sheet = ss.getSheetByName("portfolio");
-  settingsSheet = ss.getSheetByName("settings");
-  historySheet = ss.getSheetByName("history");
-  
+  var activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  sheet = activeSpreadsheet.getSheetByName("portfolio");
+
+  if(sheet == null) {
+    Logger.log("Portfolio sheet is missing. Creating it...");
+    sheet = activeSpreadsheet.insertSheet();
+    sheet.setName("portfolio");
+
+    sheet.getRange("A1").setValue("Ticker");
+    sheet.getRange("B1").setValue("Quantity");
+  }
+
+  settingsSheet = activeSpreadsheet.getSheetByName("settings");
+
   if (settingsSheet == null) {
-    Logger.log("Settings sheet is missing.");
+    Logger.log("Settings sheet is missing. Creating it...");
+    settingsSheet = activeSpreadsheet.insertSheet();
+    settingsSheet.setName("settings");
+
+    settingsSheet.getRange("A1").setValue("CoinMarketCap API Key =>");
+    settingsSheet.getRange("C1").setValue("get an API key from https://pro.coinmarketcap.com/signup");
+    settingsSheet.getRange("A2").setValue("Currency conversion #1 =>");
+    settingsSheet.getRange("B2").setValue("BTC");
+    settingsSheet.getRange("A3").setValue("Currency conversion #2 =>");
+    settingsSheet.getRange("B3").setValue("USD");
+    settingsSheet.getRange("A4").setValue("Currency conversion #3 =>");
+    settingsSheet.getRange("B4").setValue("EUR");
+    settingsSheet.getRange("A5").setValue("Currency conversion #4 =>");
+    settingsSheet.getRange("A6").setValue("Currency conversion #5 =>");
+
+    settingsSheet.autoResizeColumns(1, 3);
+  }
+
+  historySheet = activeSpreadsheet.getSheetByName("history");
+  
+  if (historySheet == null) {
+    Logger.log("History sheet is missing. Creating it...");
+    historySheet = activeSpreadsheet.insertSheet();
+    historySheet.setName("history");
   }
 
   // Get the tickers.
@@ -181,12 +216,12 @@ function createChart() {
 }
 
 function computePortfolioAllocation() {  
+
   var columnForAllocation = 3 + currenciesCount + 1 + currenciesCount + 1;
 
   var dataColumn = 4 + currenciesCount + 1;
   var grandTotalRow = 1 + tickersCount + 2;
-  var grandTotalCell = sheet.getRange(grandTotalRow, dataColumn).getA1Notation();
-  var grandTotalValue = sheet.getRange(grandTotalRow, dataColumn).getValue();
+  var grandTotalCell = sheet.getRange(grandTotalRow, dataColumn).getA1Notation();  
   Logger.log("Grand total cell: " + grandTotalCell);
 
   sheet.getRange(1, columnForAllocation).setValue("Allocation");  
@@ -205,14 +240,8 @@ function saveToHistory() {
   // Create a date object for the current date and time.
   var now = new Date();
 
-  // var startCell = "A1";
-  // var lastRow = 1 + tickersCount + 2;
-  // var lastColumn = 3 + currenciesCount + 1 + currenciesCount + 1;
-  // var lastCell = sheet.getRange(lastRow, lastColumn).getA1Notation();
-  // var sourceRange = sheet.getRange(startCell + ":" + lastCell);
   var sourceRange = sheet.getDataRange();
   Logger.log("Portfolio range: " + sourceRange.getA1Notation());
-  //Logger.log("getlastrow: " + sheet.getLastRow());
   
   var lastRowInTargetSheet = historySheet.getLastRow();
   var rowWithDate,rowWithCopiedData = 0; 
@@ -231,7 +260,6 @@ function saveToHistory() {
 
   historySheet.getRange("A" + rowWithDate).setValue("Date: " + now);
   sourceRange.copyTo(targetRange);
-
 }
 
 function getNumberFormatForCurrency(currency) {
