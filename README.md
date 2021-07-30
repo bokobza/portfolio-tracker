@@ -2,7 +2,7 @@
 
 ### Track your crypto portfolio using Google Sheets and CoinMarketCap.  
 
-You provide coins tickers and quantities and the script will fetch prices and calculate totals and your portfolio allocation.  
+You provide coins tickers and quantities and the script will fetch prices, calculate totals and your portfolio allocation.  
 You can define multiple currencies so you can see your portfolio value in USD, GBP, BTC etc..  
 
 Similar to the following :point_down:  
