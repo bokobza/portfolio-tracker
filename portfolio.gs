@@ -1,4 +1,4 @@
-function setup() {
+function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('Portfolio Menu')
       .addItem('Refresh','refreshPortfolio')
